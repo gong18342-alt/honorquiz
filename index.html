@@ -501,6 +501,203 @@ body { font-family:'Noto Sans KR',sans-serif; background:var(--bg); color:var(--
 }
 .result-time strong { color:var(--text); font-weight:700; }
 
+
+
+
+
+
+/* ══════════════════════════════════════════
+   모바일 전용 레이아웃 (max-width: 700px)
+   구조: [상단 exam-top] [문제영역 스크롤]
+         [채점하기 버튼] [문제번호 가로스크롤]
+══════════════════════════════════════════ */
+@media (max-width: 700px) {
+
+  /* ── 전체 화면 구조 ── */
+  #exam {
+    display: flex;
+    flex-direction: column;
+    height: 100svh;
+    height: 100vh;
+    overflow: hidden;
+    --top-offset: 0px !important;
+  }
+
+  /* ── 상단바 ── */
+  .exam-top {
+    flex-shrink: 0;
+    position: relative !important;
+    top: auto !important;
+    padding: 8px 12px;
+    gap: 6px;
+    z-index: 10;
+  }
+  .exam-badge  { font-size: 11px; padding: 3px 8px; }
+  .exam-timer  { font-size: 11px; padding: 2px 7px; }
+  .btn-end     { font-size: 11px; padding: 5px 10px; }
+  .prog-wrap   { display: none; }
+
+  /* ── review-header ── */
+  .review-header {
+    flex-shrink: 0;
+    position: relative !important;
+    top: auto !important;
+  }
+
+  /* ── exam-body: 세로 flex ── */
+  .exam-body {
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /* ── 사이드바 → 하단 영역으로 ── */
+  .sidebar {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    position: relative !important;
+    top: auto !important;
+    border-right: none !important;
+    border-top: 1px solid var(--border);
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow: visible;
+  }
+
+  /* 사이드바 타이틀 숨김 */
+  .sidebar-title { display: none; }
+
+  /* 채점 버튼 */
+  .sidebar-submit {
+    padding: 8px 10px;
+    border-top: none;
+  }
+  .btn-submit-side {
+    padding: 11px;
+    font-size: 13px;
+  }
+
+  /* 문제번호 목록: 가로 한 줄 스크롤 */
+  .sidebar-list {
+    flex: none !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    white-space: nowrap;
+    padding: 6px 8px 8px !important;
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 4px;
+    min-height: 0;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* srow: 가로 배치 */
+  .srow {
+    display: contents !important;
+  }
+
+  /* 번호 아이템 */
+  .sitem {
+    width: 36px !important;
+    height: 36px !important;
+    flex-shrink: 0 !important;
+    padding: 2px !important;
+    display: inline-flex !important;
+  }
+  .sitem-num { font-size: 10px !important; }
+  .sitem-ox  { font-size: 9px !important; }
+
+  /* ── 메인 문제 영역: 스크롤 ── */
+  .main-area {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    min-height: 0;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ── 문제 카드 ── */
+  .q-wrap { padding: 12px 12px 8px; }
+
+  .q-counter {
+    font-size: 12px;
+    margin-bottom: 8px;
+  }
+
+  .q-card {
+    margin-bottom: 10px;
+    border-radius: 12px;
+  }
+
+  .q-header {
+    padding: 14px 14px 10px;
+  }
+
+  .q-num {
+    font-size: 11px;
+    margin-bottom: 6px;
+  }
+
+  /* 문제 텍스트 */
+  .q-text {
+    font-size: 14px !important;
+    line-height: 1.7 !important;
+    text-align: left !important;
+  }
+
+  /* 예시 박스 */
+  .q-box {
+    font-size: 12px !important;
+    padding: 10px 12px !important;
+    margin: 8px 0 4px !important;
+  }
+
+  /* ── 선택지 ── */
+  .choices { padding: 0 0 4px; }
+
+  .choice {
+    padding: 11px 14px !important;
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+    gap: 10px !important;
+  }
+
+  .choice-num {
+    width: 24px !important;
+    height: 24px !important;
+    font-size: 12px !important;
+    flex-shrink: 0;
+  }
+
+  /* ── 피드백 ── */
+  .feedback-bar {
+    font-size: 12px !important;
+    padding: 10px 12px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .explanation-box {
+    font-size: 12px !important;
+    padding: 10px 12px !important;
+  }
+
+  /* ── 이전/다음 버튼 ── */
+  .q-nav {
+    padding: 4px 0 12px;
+    gap: 8px;
+  }
+
+  .btn-prev, .btn-next {
+    font-size: 13px !important;
+    padding: 10px 16px !important;
+    flex: 1;
+  }
+
+}
+
 </style>
 </head>
 <body>
@@ -714,6 +911,7 @@ let G_SELECTED_FORM = null;
 
 
 function updateTopOffset(){
+  if(window.innerWidth <= 700){ return; }
   const examTop = document.querySelector('.exam-top');
   if(!examTop) return;
   let h = examTop.getBoundingClientRect().height;
@@ -1295,17 +1493,34 @@ async function startExam(){
 function buildSidebar(){
   const list = document.getElementById('sidebar-list');
   list.innerHTML = '';
-  // 오답만 보기 모드면 오답 인덱스만, 아니면 전체
   const idxList = (S.wrongOnlyMode && S.reviewWrongList)
     ? S.reviewWrongList
     : S.questions.map((_,i)=>i);
 
   const wrongSet = new Set(S.reviewWrongList||[]);
+  const isMobile = window.innerWidth <= 700;
 
-  for(let r=0; r<idxList.length; r+=5){
+  // 모바일: srow 없이 아이템 직접 list에 추가 (flex row)
+  if(isMobile){
+    idxList.forEach(i => {
+      const q  = S.questions[i];
+      const el = document.createElement('div');
+      el.className = 'sitem';
+      el.id = 'sitem-'+i;
+      if(S.reviewMode && !wrongSet.has(i) && !S.wrongOnlyMode) el.style.opacity='0.35';
+      el.innerHTML = '<div class="sitem-num">'+q.num+'</div><span class="sitem-ox" id="sitem-ox-'+i+'"></span>';
+      el.onclick = (()=>{ const idx=i; return ()=>renderQ(idx); })();
+      list.appendChild(el);
+    });
+    return;
+  }
+
+  // 데스크탑: 5개씩 srow 묶음
+  const chunkSize = 5;
+  for(let r=0; r<idxList.length; r+=chunkSize){
     const row = document.createElement('div');
     row.className = 'srow';
-    const end = Math.min(r+5, idxList.length);
+    const end = Math.min(r+chunkSize, idxList.length);
     for(let ri=r; ri<end; ri++){
       const i  = idxList[ri];
       const q  = S.questions[i];
