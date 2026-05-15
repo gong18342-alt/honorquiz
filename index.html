@@ -905,7 +905,7 @@ function updateWnBadges(empno){
 }
 
 /* 오답 노트로 시험 시작 */
-function startWrongNoteExam(){
+async function startWrongNoteExam(){
   const empno = getWnEmpno();
   const list  = loadWrongNote(empno, G_WN_TAB);
   if(list.length === 0){ alert('오답 데이터가 없습니다.'); return; }
@@ -917,6 +917,25 @@ function startWrongNoteExam(){
     show('home');
     return;
   }
+
+  // 승인 재확인
+  const btn = document.getElementById('wn-start-btn');
+  btn.textContent = '확인 중...';
+  btn.disabled = true;
+  try {
+    const res  = await fetch(SCRIPT_URL + '?empno=' + encodeURIComponent(empnoInput));
+    const data = await res.json();
+    if(!data.ok){
+      alert('승인되지 않은 사원번호입니다.');
+      btn.textContent = '오답만 다시 풀기 →';
+      btn.disabled = false;
+      return;
+    }
+  } catch(e) {
+    // 네트워크 오류는 통과 (이미 로그인한 상태)
+  }
+  btn.textContent = '오답만 다시 풀기 →';
+  btn.disabled = false;
 
   // 오답 노트 데이터를 문제 형식으로 변환
   // 폼별로 묶어서 처리 (같은 form끼리)
@@ -1094,8 +1113,29 @@ function showFormSelect(){
   show('form-select');
 }
 
-function startExamWithForm(){
+async function startExamWithForm(){
   if(!G_SELECTED_FORM){ alert('유형을 선택해주세요.'); return; }
+  const btn = document.getElementById('fs-start-btn');
+  btn.textContent = '확인 중...';
+  btn.disabled = true;
+  try {
+    const empno = document.getElementById('in-empno').value.trim();
+    const res  = await fetch(SCRIPT_URL + '?empno=' + encodeURIComponent(empno));
+    const data = await res.json();
+    if(!data.ok){
+      alert('승인되지 않은 사원번호입니다.');
+      btn.textContent = '시험 시작 →';
+      btn.disabled = false;
+      return;
+    }
+  } catch(e) {
+    alert('네트워크 오류가 발생했습니다.');
+    btn.textContent = '시험 시작 →';
+    btn.disabled = false;
+    return;
+  }
+  btn.textContent = '시험 시작 →';
+  btn.disabled = false;
   _doStartExam(G_SELECTED_FORM);
 }
 
@@ -1184,11 +1224,38 @@ function setType(t){
   if(el) el.classList.add('active');
 }
 
-function startExam(){
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzVkYETq4dFkfTKweB-xTMw5zfw4s5-T6wVJtOBT3YqDoVU_g06X8yyTA5wUMaYol6E/exec';
+
+async function startExam(){
   const empno = document.getElementById('in-empno').value.trim();
   const name  = document.getElementById('in-name').value.trim();
   if(!empno){ alert('사원번호를 입력해주세요.'); return; }
   if(!name){ alert('이름을 입력해주세요.'); return; }
+
+  // 사원번호 승인 확인
+  const btn = document.getElementById('btn-start');
+  const origText = btn.textContent;
+  btn.textContent = '확인 중...';
+  btn.disabled = true;
+
+  try {
+    const res  = await fetch(SCRIPT_URL + '?empno=' + encodeURIComponent(empno));
+    const data = await res.json();
+    if(!data.ok){
+      alert('승인되지 않은 사원번호입니다.\n관리자에게 문의하세요.');
+      btn.textContent = origText;
+      btn.disabled = false;
+      return;
+    }
+  } catch(e) {
+    alert('네트워크 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+    btn.textContent = origText;
+    btn.disabled = false;
+    return;
+  }
+
+  btn.textContent = origText;
+  btn.disabled = false;
 
   // 선택유형이면 유형 선택 화면으로
   if(G_MODE === 'select'){
