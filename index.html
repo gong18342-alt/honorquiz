@@ -18,6 +18,7 @@ body { font-family:'Noto Sans KR',sans-serif; background:var(--bg); color:var(--
 
 .screen { display:none; }
 .screen.on { display:flex; flex-direction:column; min-height:100vh; }
+/* 모바일에서 min-height 오버라이드는 @media에서 처리 */
 
 /* ── HOME ── */
 #home {
@@ -506,195 +507,182 @@ body { font-family:'Noto Sans KR',sans-serif; background:var(--bg); color:var(--
 
 
 
+
 /* ══════════════════════════════════════════
-   모바일 전용 레이아웃 (max-width: 700px)
-   구조: [상단 exam-top] [문제영역 스크롤]
-         [채점하기 버튼] [문제번호 가로스크롤]
+   모바일 (max-width: 700px)
+   핵심: 모든 화면을 position:fixed로 뷰포트에 고정
+         화면 전환은 JS show()로만, 스크롤로 다른 화면 노출 완전 차단
 ══════════════════════════════════════════ */
 @media (max-width: 700px) {
 
-  /* ── 전체 화면 구조 ── */
-  #exam {
-    display: flex;
-    flex-direction: column;
-    height: 100svh;
-    height: 100vh;
-    overflow: hidden;
-    --top-offset: 0px !important;
+  html, body {
+    height: 100%;
+    width: 100%;
+    overflow: hidden !important;
+    position: fixed;
+    top: 0; left: 0;
   }
 
-  /* ── 상단바 ── */
+  /* 모든 screen: 기본 숨김 */
+  .screen {
+    display: none !important;
+  }
+
+  /* 활성 화면: 뷰포트 꽉 채우기 */
+  .screen.on {
+    display: flex !important;
+    flex-direction: column !important;
+    position: fixed !important;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100svh;
+    height: 100vh;
+    min-height: 0 !important;
+    overflow: hidden;
+    z-index: 1;
+  }
+
+  /* ── 홈 / 폼선택 / 오답노트: 내부 스크롤 ── */
+  #home.on,
+  #form-select.on,
+  #wrong-note.on {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 32px 16px 40px;
+    background: radial-gradient(ellipse 80% 60% at 50% -10%,
+      rgba(91,141,238,.18) 0%, transparent 70%);
+  }
+
+  /* 홈화면 타이틀 */
+  .home-title { font-size: 28px; margin-bottom: 20px; }
+  .setup-card { width: 100%; }
+
+  /* ── 결과 화면: 내부 스크롤 ── */
+  #result.on {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    align-items: center;
+    padding: 20px 16px 40px;
+  }
+  .result-card {
+    padding: 24px 18px !important;
+    border-radius: 16px !important;
+    width: 100%;
+  }
+  .donut-wrap svg { width: 100px; height: 100px; }
+  .donut-score { font-size: 28px !important; }
+
+  /* ── EXAM 화면: 내부 flex 레이아웃 ── */
+  #exam.on {
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  /* exam-top */
   .exam-top {
     flex-shrink: 0;
     position: relative !important;
     top: auto !important;
     padding: 8px 12px;
     gap: 6px;
-    z-index: 10;
   }
-  .exam-badge  { font-size: 11px; padding: 3px 8px; }
-  .exam-timer  { font-size: 11px; padding: 2px 7px; }
-  .btn-end     { font-size: 11px; padding: 5px 10px; }
-  .prog-wrap   { display: none; }
+  .exam-badge { font-size: 11px; padding: 3px 8px; }
+  .exam-timer { font-size: 11px; padding: 2px 7px; }
+  .btn-end    { font-size: 11px; padding: 5px 10px; }
+  .prog-wrap  { display: none; }
 
-  /* ── review-header ── */
+  /* review-header */
   .review-header {
     flex-shrink: 0;
     position: relative !important;
     top: auto !important;
   }
 
-  /* ── exam-body: 세로 flex ── */
+  /* exam-body */
   .exam-body {
-    flex: 1;
-    flex-direction: column;
-    min-height: 0;
-    overflow: hidden;
+    flex: 1 !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    display: flex !important;
   }
 
-  /* ── 사이드바 → 하단 영역으로 ── */
+  /* 문제 영역 - 스크롤 */
+  .main-area {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    min-height: 0 !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* 사이드바 → 하단 고정 */
   .sidebar {
     width: 100% !important;
     min-width: 0 !important;
     height: auto !important;
-    max-height: none !important;
     position: relative !important;
     top: auto !important;
     border-right: none !important;
     border-top: 1px solid var(--border);
-    flex-direction: column;
     flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
     overflow: visible;
   }
-
-  /* 사이드바 타이틀 숨김 */
   .sidebar-title { display: none; }
 
   /* 채점 버튼 */
-  .sidebar-submit {
-    padding: 8px 10px;
-    border-top: none;
-  }
-  .btn-submit-side {
-    padding: 11px;
-    font-size: 13px;
-  }
+  .sidebar-submit { padding: 8px 10px; border-top: none; }
+  .btn-submit-side { padding: 11px; font-size: 13px; }
 
-  /* 문제번호 목록: 가로 한 줄 스크롤 */
+  /* 번호 목록 가로 스크롤 */
   .sidebar-list {
     flex: none !important;
     overflow-x: auto !important;
     overflow-y: hidden !important;
-    white-space: nowrap;
     padding: 6px 8px 8px !important;
     display: flex !important;
     flex-direction: row !important;
     gap: 4px;
-    min-height: 0;
     scrollbar-width: thin;
     -webkit-overflow-scrolling: touch;
   }
-
-  /* srow: 가로 배치 */
-  .srow {
-    display: contents !important;
-  }
-
-  /* 번호 아이템 */
-  .sitem {
-    width: 36px !important;
-    height: 36px !important;
-    flex-shrink: 0 !important;
-    padding: 2px !important;
-    display: inline-flex !important;
-  }
+  .srow   { display: contents !important; }
+  .sitem  { width:36px !important; height:36px !important; flex-shrink:0 !important; padding:2px !important; display:inline-flex !important; }
   .sitem-num { font-size: 10px !important; }
   .sitem-ox  { font-size: 9px !important; }
 
-  /* ── 메인 문제 영역: 스크롤 ── */
-  .main-area {
-    flex: 1 !important;
-    overflow-y: auto !important;
-    min-height: 0;
-    -webkit-overflow-scrolling: touch;
-  }
-
   /* ── 문제 카드 ── */
-  .q-wrap { padding: 12px 12px 8px; }
+  .q-wrap    { padding: 10px 12px 8px; }
+  .q-counter { font-size: 12px; margin-bottom: 8px; }
+  .q-card    { margin-bottom: 10px; border-radius: 12px; }
+  .q-header  { padding: 14px 14px 10px; }
+  .q-num     { font-size: 11px; margin-bottom: 6px; }
+  .q-text    { font-size: 14px !important; line-height: 1.7 !important; text-align: left !important; }
+  .q-box     { font-size: 12px !important; padding: 10px 12px !important; margin: 8px 0 4px !important; }
 
-  .q-counter {
-    font-size: 12px;
-    margin-bottom: 8px;
-  }
-
-  .q-card {
-    margin-bottom: 10px;
-    border-radius: 12px;
-  }
-
-  .q-header {
-    padding: 14px 14px 10px;
-  }
-
-  .q-num {
-    font-size: 11px;
-    margin-bottom: 6px;
-  }
-
-  /* 문제 텍스트 */
-  .q-text {
-    font-size: 14px !important;
-    line-height: 1.7 !important;
-    text-align: left !important;
-  }
-
-  /* 예시 박스 */
-  .q-box {
-    font-size: 12px !important;
-    padding: 10px 12px !important;
-    margin: 8px 0 4px !important;
-  }
-
-  /* ── 선택지 ── */
+  /* 선택지 */
   .choices { padding: 0 0 4px; }
+  .choice  { padding: 11px 14px !important; font-size: 13px !important; line-height: 1.5 !important; gap: 10px !important; }
+  .choice-num { width:24px !important; height:24px !important; font-size:12px !important; flex-shrink:0; }
 
-  .choice {
-    padding: 11px 14px !important;
-    font-size: 13px !important;
-    line-height: 1.5 !important;
-    gap: 10px !important;
-  }
+  /* 피드백 / 해설 */
+  .feedback-bar   { font-size:12px !important; padding:10px 12px !important; margin-bottom:8px !important; }
+  .explanation-box { font-size:12px !important; padding:10px 12px !important; }
 
-  .choice-num {
-    width: 24px !important;
-    height: 24px !important;
-    font-size: 12px !important;
-    flex-shrink: 0;
-  }
+  /* 이전/다음 */
+  .q-nav { padding: 4px 0 12px; gap: 8px; }
+  .btn-prev, .btn-next { font-size:13px !important; padding:10px 16px !important; flex:1; }
 
-  /* ── 피드백 ── */
-  .feedback-bar {
-    font-size: 12px !important;
-    padding: 10px 12px !important;
-    margin-bottom: 8px !important;
-  }
-
-  .explanation-box {
-    font-size: 12px !important;
-    padding: 10px 12px !important;
-  }
-
-  /* ── 이전/다음 버튼 ── */
-  .q-nav {
-    padding: 4px 0 12px;
-    gap: 8px;
-  }
-
-  .btn-prev, .btn-next {
-    font-size: 13px !important;
-    padding: 10px 16px !important;
-    flex: 1;
-  }
+  /* ── 유형 선택 화면 ── */
+  #form-select.on .form-select-card { gap: 16px; }
+  .form-select-title  { font-size: 14px; }
+  .form-select-subtitle { font-size: 12px; margin-top: 6px; }  /* 간격 추가 */
+  .form-grid { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .form-btn  { padding: 8px 4px; font-size: 11px; }
 
 }
 
@@ -752,7 +740,7 @@ body { font-family:'Noto Sans KR',sans-serif; background:var(--bg); color:var(--
   <div class="form-select-card">
     <div>
       <div class="form-select-title" id="fs-title">유형을 선택하세요</div>
-      <div class="form-select-subtitle" id="fs-subtitle">응시할 시험 유형을 하나 선택해주세요</div>
+      <div class="form-select-subtitle" id="fs-subtitle" style="margin-top:8px">응시할 시험 유형을 하나 선택해주세요</div>
     </div>
     <div class="form-grid" id="form-grid"></div>
     <button class="btn-primary" id="fs-start-btn" onclick="startExamWithForm()" disabled style="opacity:.4">시험 시작 →</button>
