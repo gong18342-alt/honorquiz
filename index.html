@@ -220,11 +220,11 @@ body { font-family:'Noto Sans KR',sans-serif; background:var(--bg); color:var(--
 .result-card { width:100%; max-width:440px; background:var(--card); border:1px solid var(--border); border-radius:20px; padding:36px 28px; text-align:center; }
 .result-badge { font-size:12px; font-weight:700; letter-spacing:3px; color:var(--accent); text-transform:uppercase; margin-bottom:6px; }
 .result-name { font-size:18px; font-weight:700; margin-bottom:28px; }
-.donut-wrap { position:relative; width:130px; height:130px; margin:0 auto 28px; }
+.donut-wrap { position:relative; width:130px; height:130px; margin:0 auto 28px; display:flex; align-items:center; justify-content:center; }
 .donut-svg { transform:rotate(-90deg); }
 .donut-bg { fill:none; stroke:var(--border); stroke-width:10; }
 .donut-fill { fill:none; stroke-width:10; stroke-linecap:round; transition:stroke-dasharray .8s ease; }
-.donut-label { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.donut-label { position:absolute; top:0; left:0; right:0; bottom:0; display:flex; flex-direction:column; align-items:center; justify-content:center; pointer-events:none; }
 .donut-score { font-size:34px; font-weight:900; line-height:1; }
 .donut-unit { font-size:12px; color:var(--text2); margin-top:2px; }
 .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:24px; }
@@ -571,6 +571,7 @@ body { font-family:'Noto Sans KR',sans-serif; background:var(--bg); color:var(--
     border-radius: 16px !important;
     width: 100%;
   }
+  .donut-wrap { width:100px !important; height:100px !important; }
   .donut-wrap svg { width: 100px; height: 100px; }
   .donut-score { font-size: 28px !important; }
 
@@ -686,6 +687,47 @@ body { font-family:'Noto Sans KR',sans-serif; background:var(--bg); color:var(--
 
 }
 
+
+/* 오답노트 형별 그룹 */
+.wn-group { display:flex; flex-direction:column; gap:0; }
+.wn-group-header {
+  display:flex; align-items:center; justify-content:space-between;
+  background:var(--card2); border-radius:10px 10px 0 0;
+  padding:9px 12px; border:1px solid var(--border);
+}
+.wn-group-label { display:flex; align-items:center; gap:8px; }
+.wn-group-count { font-size:11px; color:var(--text3); }
+.wn-group-actions { display:flex; gap:6px; }
+.wn-group-start {
+  font-size:11px; font-weight:700; color:var(--accent);
+  background:rgba(91,141,238,.12); border:1px solid rgba(91,141,238,.3);
+  border-radius:6px; padding:3px 10px; cursor:pointer;
+  font-family:inherit; transition:all .15s;
+}
+.wn-group-start:hover { background:rgba(91,141,238,.25); }
+.wn-group-del {
+  font-size:12px; background:transparent;
+  border:1px solid var(--border); border-radius:6px;
+  padding:3px 8px; cursor:pointer; color:var(--text3);
+  transition:all .15s; font-family:inherit;
+}
+.wn-group-del:hover { border-color:#ef4444; color:#ef4444; }
+.wn-group-items {
+  border:1px solid var(--border); border-top:none;
+  border-radius:0 0 10px 10px; overflow:hidden;
+}
+.wn-group-items .wn-item {
+  border-radius:0; border:none;
+  border-top:1px solid var(--border);
+}
+.wn-group-items .wn-item:first-child { border-top:none; }
+.wn-item-num {
+  font-size:10px; font-weight:700; color:var(--accent);
+  background:rgba(91,141,238,.1); border-radius:4px;
+  padding:1px 5px; flex-shrink:0; white-space:nowrap;
+}
+.wn-list { gap:8px; }
+
 </style>
 </head>
 <body>
@@ -701,7 +743,7 @@ body { font-family:'Noto Sans KR',sans-serif; background:var(--bg); color:var(--
     </div>
     <div class="field">
       <label>사원번호</label>
-      <input type="text" id="in-empno" placeholder="사원번호를 입력하세요" maxlength="20" oninput="refreshWnBadgesForHome()">
+      <input type="text" id="in-empno" placeholder="사원번호 (숫자 5자리)" maxlength="7" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,7); refreshWnBadgesForHome();">
     </div>
     <div class="field">
       <label>이름</label>
@@ -1023,10 +1065,17 @@ function setWnTab(ins){
 function renderWrongNote(empno){
   const list = loadWrongNote(empno, G_WN_TAB);
   const total = list.length;
-  const forms = new Set(list.map(i => i.form)).size;
+
+  // 형별 그룹핑
+  const grouped = {};
+  list.forEach((item, idx) => {
+    if(!grouped[item.form]) grouped[item.form] = [];
+    grouped[item.form].push({...item, _idx: idx});
+  });
+  const formCount = Object.keys(grouped).length;
 
   document.getElementById('wn-total').textContent = total;
-  document.getElementById('wn-forms').textContent = forms;
+  document.getElementById('wn-forms').textContent = formCount;
 
   const listEl = document.getElementById('wn-list');
   listEl.innerHTML = '';
@@ -1039,21 +1088,132 @@ function renderWrongNote(empno){
   }
 
   const labelMap = G_WN_TAB === 'nonlife' ? NL_FORM_LABELS : LI_FORM_LABELS;
-  list.forEach((item, idx) => {
-    const el = document.createElement('div');
-    el.className = 'wn-item';
-    const label = labelMap[item.form] || item.form + '형';
-    el.innerHTML =
-      '<div class="wn-item-info">' +
-        '<div class="wn-item-form">' + label + ' Q' + item.num + '</div>' +
-        '<div class="wn-item-q">' + item.q + '</div>' +
-      '</div>' +
-      '<button class="wn-item-del" onclick="deleteWnItem(' + idx + ')" title="삭제">✕</button>';
-    listEl.appendChild(el);
+
+  // 형별로 그룹 렌더링
+  Object.keys(grouped).sort().forEach(form => {
+    const items = grouped[form];
+    const label = labelMap[form] || form + '형';
+
+    // 형 헤더
+    const groupEl = document.createElement('div');
+    groupEl.className = 'wn-group';
+        // 헤더 DOM 직접 생성 (따옴표 충돌 방지)
+    const headerEl = document.createElement('div');
+    headerEl.className = 'wn-group-header';
+
+    const labelDiv = document.createElement('div');
+    labelDiv.className = 'wn-group-label';
+    labelDiv.innerHTML =
+      '<span class="wn-item-form">' + label + '</span>' +
+      '<span class="wn-group-count">' + items.length + '문제</span>';
+
+    const actionsDiv = document.createElement('div');
+    actionsDiv.className = 'wn-group-actions';
+
+    const startBtn = document.createElement('button');
+    startBtn.className = 'wn-group-start';
+    startBtn.textContent = '▶ 풀기';
+    startBtn.title = '이 유형만 풀기';
+    startBtn.onclick = (f => () => startWrongNoteByForm(f))(form);
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'wn-group-del';
+    delBtn.textContent = '🗑';
+    delBtn.title = '이 유형 전체 삭제';
+    delBtn.onclick = (f => () => deleteWnForm(f))(form);
+
+    actionsDiv.appendChild(startBtn);
+    actionsDiv.appendChild(delBtn);
+    headerEl.appendChild(labelDiv);
+    headerEl.appendChild(actionsDiv);
+    groupEl.appendChild(headerEl);
+
+    // 문제 목록 (접기/펼치기)
+    const itemsEl = document.createElement('div');
+    itemsEl.className = 'wn-group-items';
+    items.forEach(item => {
+      const el = document.createElement('div');
+      el.className = 'wn-item';
+      el.innerHTML =
+        '<div class="wn-item-info">' +
+          '<span class="wn-item-num">Q' + item.num + '</span>' +
+          '<div class="wn-item-q">' + item.q + '</div>' +
+        '</div>' +
+        '<button class="wn-item-del" onclick="deleteWnItem(' + item._idx + ')" title="삭제">✕</button>';
+      itemsEl.appendChild(el);
+    });
+    groupEl.appendChild(itemsEl);
+    listEl.appendChild(groupEl);
   });
 
   document.getElementById('wn-start-btn').disabled = false;
   document.getElementById('wn-start-btn').style.opacity = '1';
+}
+
+/* 특정 형만 오답 풀기 */
+async function startWrongNoteByForm(form){
+  const empno = getWnEmpno();
+  const empnoInput = document.getElementById('in-empno').value.trim();
+  const nameInput  = document.getElementById('in-name').value.trim();
+  if(!empnoInput || !nameInput){
+    alert('홈 화면에서 사원번호와 이름을 먼저 입력해주세요.');
+    show('home'); return;
+  }
+  const allList = loadWrongNote(empno, G_WN_TAB);
+  const list = allList.filter(item => item.form === form);
+  if(list.length === 0){ alert('오답 데이터가 없습니다.'); return; }
+  _startWrongNoteExamWithList(list, empnoInput, nameInput, form);
+}
+
+/* 특정 형 오답 전체 삭제 */
+function deleteWnForm(form){
+  if(!confirm(form + '형 오답을 전체 삭제할까요?')) return;
+  const empno = getWnEmpno();
+  let list = loadWrongNote(empno, G_WN_TAB);
+  list = list.filter(item => item.form !== form);
+  saveWrongNote(empno, G_WN_TAB, list);
+  renderWrongNote(empno);
+  updateWnBadges(empno);
+}
+
+/* 공통 오답 시험 시작 */
+function _startWrongNoteExamWithList(list, empnoInput, nameInput, repForm){
+  const QUESTIONS    = G_WN_TAB === 'nonlife' ? NL_QUESTIONS    : LI_QUESTIONS;
+  const ANSWERS      = G_WN_TAB === 'nonlife' ? NL_ANSWERS      : LI_ANSWERS;
+  const EXPLANATIONS = G_WN_TAB === 'nonlife' ? NL_EXPLANATIONS : LI_EXPLANATIONS;
+
+  const reNumbered = list.map((item, i) => ({
+    num: i+1, q: item.q, c: item.c, box: item.box||'',
+    _origNum: item.num, _form: item.form
+  }));
+  const wnAnsArray = list.map(item => item.ans);
+  const wnExp = {};
+  list.forEach((item, i) => { if(item.exp) wnExp[String(i+1)] = item.exp; });
+
+  S = {
+    form: repForm, name: nameInput, empno: empnoInput,
+    currentQ:0, questions: reNumbered, userAnswers:{}, submitted:false,
+    examType:'all', ins: G_WN_TAB,
+    QUESTIONS, ANSWERS, EXPLANATIONS,
+    reviewMode:false, reviewWrongList:null, wrongOnlyMode:false,
+    wrongNoteMode:true,
+    ANSWERS:      { [repForm]: wnAnsArray },
+    EXPLANATIONS: { [repForm]: wnExp }
+  };
+
+  const insLabel = G_WN_TAB === 'nonlife' ? '손보' : '생보';
+  const labelMap = G_WN_TAB === 'nonlife' ? NL_FORM_LABELS : LI_FORM_LABELS;
+  const formLabel = labelMap[repForm] || repForm+'형';
+  document.getElementById('exam-badge').textContent =
+    '📒 ' + insLabel + ' ' + formLabel + ' 오답 · ' + list.length + '문제';
+
+  const btnSubmit = document.getElementById('btn-submit-side');
+  btnSubmit.textContent = '채점하기';
+  btnSubmit.onclick = submitExam;
+  buildSidebar(); renderQ(0); show('exam');
+  document.getElementById('review-header').style.display='none';
+  requestAnimationFrame(updateTopOffset);
+  startTimer();
 }
 
 function deleteWnItem(idx){
@@ -1126,77 +1286,7 @@ async function startWrongNoteExam(){
   // 오답 노트 데이터를 문제 형식으로 변환
   // 폼별로 묶어서 처리 (같은 form끼리)
   // 편의상 form은 첫번째 항목 기준, 오답 노트 전용 세션 생성
-  const QUESTIONS = G_WN_TAB === 'nonlife' ? NL_QUESTIONS : LI_QUESTIONS;
-  const ANSWERS   = G_WN_TAB === 'nonlife' ? NL_ANSWERS   : LI_ANSWERS;
-  const EXPLANATIONS = G_WN_TAB === 'nonlife' ? NL_EXPLANATIONS : LI_EXPLANATIONS;
-
-  // 오답 노트 문제들을 가상의 문제 배열로 변환
-  const fakeQuestions = list.map(item => ({
-    num: item.num, q: item.q, c: item.c, box: item.box || '',
-    _form: item.form  // 원본 form 추적
-  }));
-
-  // 오답 노트 전용 S 생성 (form은 대표값 사용)
-  const repForm = list[0].form;
-
-  // ANSWERS 함수: 각 문제별 form이 다를 수 있으므로 직접 ans 사용
-  const fakeAnswers = {};
-  list.forEach((item, i) => {
-    fakeAnswers[i] = item.ans; // index → 정답
-  });
-
-  // 오답 노트용 ANSWERS 래퍼
-  const wnAnswers = {
-    [repForm]: list.map(item => item.ans)
-  };
-  // 하지만 q.num이 list index와 맞지 않으므로
-  // fakeQuestions[i].num === i+1 형태로 재번호 매기기
-  const reNumbered = fakeQuestions.map((q, i) => ({
-    ...q,
-    num: i + 1,      // 1~N으로 재번호
-    _origNum: q.num  // 원본 번호 보존
-  }));
-
-  // 정답 배열 (재번호 기준)
-  const wnAnsArray = list.map(item => item.ans);
-  const wnExp = {};
-  list.forEach((item, i) => {
-    if(item.exp) wnExp[String(i+1)] = item.exp;
-  });
-
-  S = {
-    form: repForm,
-    name: nameInput,
-    empno: empnoInput,
-    currentQ: 0,
-    questions: reNumbered,
-    userAnswers: {},
-    submitted: false,
-    examType: 'all',
-    ins: G_WN_TAB,
-    QUESTIONS, ANSWERS, EXPLANATIONS,
-    reviewMode: false,
-    reviewWrongList: null,
-    wrongOnlyMode: false,
-    wrongNoteMode: true,  // 오답 노트 모드 플래그
-    // 오답 노트 전용 정답/해설 (재번호 기준)
-    ANSWERS: { [repForm]: wnAnsArray },
-    EXPLANATIONS: { [repForm]: wnExp }
-  };
-
-  const insLabel = G_WN_TAB === 'nonlife' ? '손보' : '생보';
-  document.getElementById('exam-badge').textContent = '📒 ' + insLabel + ' 오답노트 · ' + list.length + '문제';
-
-  const btnSubmit = document.getElementById('btn-submit-side');
-  btnSubmit.textContent = '채점하기';
-  btnSubmit.onclick = submitExam;
-
-  buildSidebar();
-  renderQ(0);
-  show('exam');
-  document.getElementById('review-header').style.display = 'none';
-  requestAnimationFrame(updateTopOffset);
-  startTimer();  // 오답 노트 시험도 타이머 시작
+  _startWrongNoteExamWithList(list, empnoInput, nameInput, list[0].form);
 }
 
 /* 홈 화면 진입/복귀 시 뱃지 업데이트 */
