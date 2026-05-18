@@ -343,8 +343,8 @@ body { font-family:'Noto Sans KR',sans-serif; background:var(--bg); color:var(--
 /* ── 유형 선택 화면 ── */
 #form-select { }
 .form-select-card {
-  background:var(--card); border-radius:16px; padding:20px 16px;
-  border:1px solid var(--border); max-width:420px; margin:0 auto;
+  background:var(--card); border-radius:20px; padding:28px 24px;
+  border:1px solid var(--border); width:100%; max-width:420px; margin:0 auto;
   display:flex; flex-direction:column; gap:14px;
 }
 .form-select-title {
@@ -393,8 +393,8 @@ body { font-family:'Noto Sans KR',sans-serif; background:var(--bg); color:var(--
 /* ── 오답 노트 화면 ── */
 #wrong-note { }
 .wrong-note-card {
-  background:var(--card); border-radius:16px; padding:20px 16px;
-  border:1px solid var(--border); max-width:480px; margin:0 auto;
+  background:var(--card); border-radius:20px; padding:28px 24px;
+  border:1px solid var(--border); width:100%; max-width:420px; margin:0 auto;
   display:flex; flex-direction:column; gap:14px;
 }
 .wn-header {
@@ -695,7 +695,7 @@ body { font-family:'Noto Sans KR',sans-serif; background:var(--bg); color:var(--
   background:var(--card2); border-radius:10px 10px 0 0;
   padding:9px 12px; border:1px solid var(--border);
 }
-.wn-group-label { display:flex; align-items:center; gap:8px; }
+.wn-group-label { display:flex; align-items:center; gap:8px; flex:1; }
 .wn-group-count { font-size:11px; color:var(--text3); }
 .wn-group-actions { display:flex; gap:6px; }
 .wn-group-start {
@@ -727,6 +727,39 @@ body { font-family:'Noto Sans KR',sans-serif; background:var(--bg); color:var(--
   padding:1px 5px; flex-shrink:0; white-space:nowrap;
 }
 .wn-list { gap:8px; }
+
+
+/* 오답노트 아코디언 */
+.wn-group-header {
+  cursor: pointer;
+  user-select: none;
+}
+.wn-group-header:hover { background: var(--card); }
+
+.wn-group-toggle {
+  font-size: 12px; color: var(--text3);
+  transition: transform .2s;
+  flex-shrink: 0;
+  margin-left: 4px;
+}
+.wn-group.open .wn-group-toggle { transform: rotate(180deg); }
+
+.wn-group-items {
+  display: none;
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+  overflow: hidden;
+}
+.wn-group.open .wn-group-items { display: block; }
+
+/* 헤더 border-radius: 열렸을 때 아래 각 없애기 */
+.wn-group.open .wn-group-header {
+  border-radius: 10px 10px 0 0;
+}
+.wn-group:not(.open) .wn-group-header {
+  border-radius: 10px;
+}
 
 </style>
 </head>
@@ -1105,7 +1138,8 @@ function renderWrongNote(empno){
     labelDiv.className = 'wn-group-label';
     labelDiv.innerHTML =
       '<span class="wn-item-form">' + label + '</span>' +
-      '<span class="wn-group-count">' + items.length + '문제</span>';
+      '<span class="wn-group-count">' + items.length + '문제</span>' +
+      '<span class="wn-group-toggle">▼</span>';
 
     const actionsDiv = document.createElement('div');
     actionsDiv.className = 'wn-group-actions';
@@ -1114,18 +1148,22 @@ function renderWrongNote(empno){
     startBtn.className = 'wn-group-start';
     startBtn.textContent = '▶ 풀기';
     startBtn.title = '이 유형만 풀기';
-    startBtn.onclick = (f => () => startWrongNoteByForm(f))(form);
+    startBtn.onclick = (f => (e) => { e.stopPropagation(); startWrongNoteByForm(f); })(form);
 
     const delBtn = document.createElement('button');
     delBtn.className = 'wn-group-del';
     delBtn.textContent = '🗑';
     delBtn.title = '이 유형 전체 삭제';
-    delBtn.onclick = (f => () => deleteWnForm(f))(form);
+    delBtn.onclick = (f => (e) => { e.stopPropagation(); deleteWnForm(f); })(form);
 
     actionsDiv.appendChild(startBtn);
     actionsDiv.appendChild(delBtn);
     headerEl.appendChild(labelDiv);
     headerEl.appendChild(actionsDiv);
+
+    // 헤더 클릭 → 열기/닫기 토글
+    headerEl.onclick = () => groupEl.classList.toggle('open');
+
     groupEl.appendChild(headerEl);
 
     // 문제 목록 (접기/펼치기)
