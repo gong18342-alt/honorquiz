@@ -1973,6 +1973,21 @@ function showResult(){
     timeEl.innerHTML = '⏱ 소요시간 <strong>' + formatTime(S.elapsedTime) + '</strong>';
   }
   show('result');
+
+  // ── 구글 시트 기록 전송 ──
+  try {
+    const insLabel = S.ins === 'nonlife' ? '손해보험' : '생명보험';
+    const params = new URLSearchParams({
+      action: 'log',
+      empno: S.empno  || '',
+      name:  S.name   || '',
+      ins:   insLabel,
+      form:  S.form   || '',
+      score: score,
+      pass:  pass ? '합격' : '불합격'
+    });
+    fetch(SCRIPT_URL + '?' + params.toString()).catch(()=>{});
+  } catch(e) {}
 }
 function reviewWrong(){
   const wrongList = S.questions.map((_,i)=>i)
